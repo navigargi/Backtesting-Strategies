@@ -7,7 +7,8 @@ from RSI_Strategy import RSI_Strategy
 from Alpha1 import Alpha1
 from EMACross import EMA_Cross
 from AI1 import CryptoAI
-from AI2 import CryptoAI
+from MeanReversion import MeanReversion
+
 
 userTicker = input("Enter a valid Ticker: ")
 userStart = input("Enter a valid start date: ")
@@ -16,7 +17,7 @@ userEnd = input("Enter a valid end date: ")
 dataScraper = DataScraping(userTicker, userStart, userEnd)
 dataScraper.printData()
 
-strategy = CryptoAI(dataScraper, dataScraper.getIndex(20))
+strategy = MeanReversion(dataScraper, userStart)
 backTesting = BackTesting(strategy, 1000, dataScraper, 0, dataScraper.getIndex(20), 900,0,.02,.50)
 
 i = 1

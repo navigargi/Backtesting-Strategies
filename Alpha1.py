@@ -1,4 +1,5 @@
 from Close import Close
+from DataScraping import DataScraping
 from SMACross import SMA_Cross
 class Alpha1:
     def __init__(self, dataScraper, date):
@@ -6,6 +7,7 @@ class Alpha1:
         self.dataScraper = dataScraper
         self.close = Close(dataScraper, date)
         self.sma = SMA_Cross(dataScraper, date)
+
 
     def buy(self):
         curr_index = self.dataScraper.getRow(self.date)
