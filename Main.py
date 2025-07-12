@@ -8,6 +8,8 @@ from Alpha1 import Alpha1
 from EMACross import EMA_Cross
 from AI1 import CryptoAI
 from MeanReversion import MeanReversion
+from AdaptiveSpreadStrategy import AdaptiveSpreadStrategy
+from BasketTrading import BasketTrading
 
 
 userTicker = input("Enter a valid Ticker: ")
@@ -17,7 +19,7 @@ userEnd = input("Enter a valid end date: ")
 dataScraper = DataScraping(userTicker, userStart, userEnd)
 dataScraper.printData()
 
-strategy = MeanReversion(dataScraper, userStart)
+strategy = BasketTrading(dataScraper, userStart)
 backTesting = BackTesting(strategy, 1000, dataScraper, 0, dataScraper.getIndex(20), 900,0,.02,.50)
 
 i = 1
