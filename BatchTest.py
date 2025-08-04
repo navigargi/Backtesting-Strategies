@@ -1,6 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-
 from DataScraping import DataScraping
 from BackTesting import BackTesting
 from Close import Close
@@ -12,10 +10,10 @@ from AI1 import CryptoAI
 from MeanReversion import MeanReversion
 from AdaptiveSpreadStrategy import AdaptiveSpreadStrategy
 from BasketTrading import BasketTrading
+from VWAPDrift import VWAPDrift
 from LatencyArbitrage import LatencyArbitrage
 from OptionSkewArbitrage import OptionSkewArbitrage
 from ADRLocalSharesArb import ADRLocalSharesArb
-from Alpha1 import Alpha1
 from BidAskSpreadCapture import BidAskSpreadCapture
 from CalendarSpread import CalendarSpread
 from ClosingAuctionMomentum import ClosingAuctionMomentum
@@ -41,76 +39,151 @@ from QueuePositioning import QueuePositioning
 from ReinforcementLearningExecution import ReinforcementLearningExecution
 from ShortTermMomentum import ShortTermMomentum
 from TriangularArbitrage import TriangularArbitrage
-from VWAPDrift import VWAPDrift
-
-# Step 1: get user input
-userTicker = input("Enter a valid Ticker: ")
-userStart = input("Enter a valid start date (YYYY-MM-DD): ")
-userEnd = input("Enter a valid end date (YYYY-MM-DD): ")
-
-# Step 2: scrape data
-dataScraper = DataScraping(userTicker, userStart, userEnd)
+from VolatilityExpansion import VolatilityExpansion
+from LiquidityWavefrontScanning import LiquidityWavefrontScanning
+from SpectralFractualStrategy import IntradayFractalStrategy
+from QuantumEntropyStrategy import QuantumEntropyStrategy
+from SuperiorAdaptiveSpreadStrategy import SuperiorAdaptiveSpreadStrategy
+csv_path = input("Enter the path to your CSV file: ")
+dataScraper = DataScraping()
 dataScraper.printData()
 
-# Step 3: list of strategies to test
-strategy_classes = [
-    BasketTrading, SMA_Cross, RSI_Strategy,
-    EMA_Cross, CryptoAI, MeanReversion, AdaptiveSpreadStrategy, LatencyArbitrage, OptionSkewArbitrage,
-    ADRLocalSharesArb, BidAskSpreadCapture, CalendarSpread,
-    ClosingAuctionMomentum, CointegrationTrading, DividendArbitrage,
-    ETFConstituentArb, ETFFuturesArb, FadingLargeOrders, FlashEventResponse, FuturesSpotArb,
-    HiddenMarkovModels, IcebergDetection, LiquidityDetection, MeanReversionSpreads,
-    OpeningRangeBreakout, OrderBookFeatureModels, OrderBookImbalance, OrderFlowMomentum,
-    PairsTrading, PeggedOrders, PricePredictionML, QueuePositioning,
-    ReinforcementLearningExecution, ShortTermMomentum, TriangularArbitrage, VWAPDrift
+strategies = [
+    (BasketTrading, {}),
+    (SMA_Cross, {}),
+    (RSI_Strategy, {}),
+    (EMA_Cross, {}),
+    (CryptoAI, {}),
+    (MeanReversion, {}),
+    (AdaptiveSpreadStrategy, {}),
+    (LatencyArbitrage, {}),
+    (OptionSkewArbitrage, {}),
+    (ADRLocalSharesArb, {}),
+    (BidAskSpreadCapture, {}),
+    (CalendarSpread, {}),
+    (ClosingAuctionMomentum, {}),
+    (CointegrationTrading, {}),
+    (DividendArbitrage, {}),
+    (ETFConstituentArb, {}),
+    (ETFFuturesArb, {}),
+    (FadingLargeOrders, {}),
+    (FlashEventResponse, {}),
+    (FuturesSpotArb, {}),
+    (HiddenMarkovModels, {}),
+    (IcebergDetection, {}),
+    (LiquidityDetection, {}),
+    (MeanReversionSpreads, {}),
+    (OpeningRangeBreakout, {}),
+    (OrderBookFeatureModels, {}),
+    (OrderBookImbalance, {}),
+    (OrderFlowMomentum, {}),
+    (PairsTrading, {}),
+    (PeggedOrders, {}),
+    (PricePredictionML, {}),
+    (QueuePositioning, {}),
+    (ReinforcementLearningExecution, {}),
+    (ShortTermMomentum, {}),
+    (TriangularArbitrage, {}),
+    (VWAPDrift, {}),
+    (Alpha1, {}),
+    # Add other strategies here as needed
 ]
 
-# Dictionary to store results
-all_results = {}
+strategies = [
+    (SuperiorAdaptiveSpreadStrategy, {}),
+    (AdaptiveSpreadStrategy, {})
+]
+import matplotlib.pyplot as plt
+import threading
 
-# Step 4: loop over each strategy
-for strat_class in strategy_classes:
-    print(f"\n=== Running strategy: {strat_class.__name__} ===")
+results = []
+results_lock = threading.Lock()
 
-    # Create strategy instance
-    strategy = strat_class(dataScraper, userStart)
-
-    # Create backtesting instance
-    backTesting = BackTesting(
-        strategy,
-        1000,  # initial cash
-        dataScraper,
-        0,
-        dataScraper.getIndex(20),  # you can adjust this lookahead window if needed
-        900,
-        0,
-        0.02,
-        0.50
-    )
-
-    # Run backtest loop
+def run_strategy(strategy_class, extra_args):
+    print(f"\nRunning {strategy_class.__name__}...")
     i = 1
+    backTesting = None
     while i < len(dataScraper.data):
-        if backTesting.bankrupt():
-            print(f"{strat_class.__name__} went bankrupt")
-            break
         date = dataScraper.getIndex(i)
+        strategy = strategy_class(dataScraper, date)
+        if backTesting is None:
+            backTesting = BackTesting(strategy, 1000, dataScraper, 0, dataScraper.getIndex(20), 900, 0, .02, .50)
+        if backTesting.bankrupt():
+            print(f"You are broke in {strategy_class.__name__}")
+            break
         backTesting.update(date)
         i += 1
+    if backTesting:
+        with results_lock:
+            results.append({
+                'name': strategy_class.__name__,
+                'portfolio': backTesting.portfolio.copy(),
+                'dates': list(dataScraper.data.index)[:len(backTesting.portfolio)]
+            })
 
-    # Save the portfolio (equity curve)
-    all_results[strat_class.__name__] = backTesting.portfolio
+threads = []
+for strategy_class, extra_args in strategies:
+    t = threading.Thread(target=run_strategy, args=(strategy_class, extra_args))
+    t.start()
+    threads.append(t)
+for t in threads:
+    t.join()
 
-    # (Optional) show final portfolio value
-    print(f"Final portfolio value for {strat_class.__name__}: {backTesting.portfolio[-1]}")
+import numpy as np
 
-# Step 5: plot all equity curves
+# Calculate uniform buy-and-hold curve and return
+initial_amount = 1000
+close_prices = dataScraper.data['Close']
+first_price = close_prices.iloc[0]
+buy_and_hold_curve = close_prices * (initial_amount / first_price)
+buy_and_hold_return = (close_prices.iloc[-1] / close_prices.iloc[0]) - 1
+
+# Plot all strategies on one graph
 plt.figure(figsize=(12, 7))
-for name, portfolio in all_results.items():
-    plt.plot(portfolio, label=name)
-plt.title(f"Equity Curves for {userTicker} ({userStart} to {userEnd})")
-plt.xlabel("Time Step (index)")
-plt.ylabel("Portfolio Value")
+for result in results:
+    plt.plot(result['dates'], result['portfolio'], label=result['name'])
+plt.plot(close_prices.index, buy_and_hold_curve, label='Buy & Hold', linestyle='--', color='black')
+plt.xlabel('Date')
+plt.ylabel('Portfolio Value')
+plt.title('Strategy Portfolio Comparison')
 plt.legend()
 plt.grid(True)
+plt.tight_layout()
 plt.show()
+
+# Create a summary table
+summary = []
+for result in results:
+    portfolio = np.array(result['portfolio'])
+    portfolio_series = pd.Series(portfolio)
+    daily_returns = portfolio_series.pct_change().dropna()
+    avg_daily_return = daily_returns.mean()
+    annualized_return = avg_daily_return * 252
+    daily_volatility = daily_returns.std()
+    annualized_volatility = daily_volatility * np.sqrt(252)
+    sharpe_ratio = annualized_return / annualized_volatility if annualized_volatility != 0 else np.nan
+    total_return = portfolio[-1] / portfolio[0] - 1
+    summary.append({
+        'Strategy': result['name'],
+        'Final Value': portfolio[-1],
+        'Total Return (%)': total_return * 100,
+        'Annualized Return (%)': annualized_return * 100,
+        'Annualized Volatility (%)': annualized_volatility * 100,
+        'Sharpe Ratio': sharpe_ratio,
+        'Buy & Hold Return (%)': buy_and_hold_return * 100
+    })
+    # Print final cash value with strategy name aligned right
+    print(f"Final portfolio value: ${portfolio[-1]:,.2f}   |   Strategy: {result['name']}")
+
+summary_df = pd.DataFrame(summary)
+if not summary_df.empty and 'Total Return (%)' in summary_df.columns:
+    summary_df = summary_df.sort_values(by='Total Return (%)', ascending=False)
+    print("\n==== Strategy Performance Summary Table (Sorted by Total Return %) ====")
+    print(summary_df.to_string(index=False, float_format='%.2f'))
+    print("===========================================\n")
+else:
+    print("\n==== No strategy results to summarize. ====")
+
+
+
+

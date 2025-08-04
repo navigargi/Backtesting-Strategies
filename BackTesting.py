@@ -30,32 +30,27 @@ class BackTesting:
         return self.cash >= amount
     def buy(self):
 
-        price = self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0]
+        price = self.dataScraper.getDateData(self.date, self.strategy.getType())
         if self.strategy.buy() and self.cash > self.buyAmount + self.extraCosts*self.buyAmount:
             print("                                               TRUE BUY")
             self.i = 1
             self.cash -= self.buyAmount + self.extraCosts * self.buyAmount
-            self.stocks += self.buyAmount/(float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0]))
+            self.stocks += self.buyAmount/(float(self.dataScraper.getDateData(self.date, self.strategy.getType())))
     def sell(self):
         if(self.strategy.sell() and self.stocks > 0):
             print("                                               TRUE SELL")
             self.i = 2
-            self.cash += float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0]) * self.stocks - self.extraCosts * float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0])
+            self.cash += float(self.dataScraper.getDateData(self.date, self.strategy.getType())) * self.stocks - self.extraCosts * float(self.dataScraper.getDateData(self.date, self.strategy.getType()))
             self.stocks = 0
 
     def sellA(self):
         print("                                               TRUE SELL")
         self.i = 2
-        self.cash += float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[
-                               0]) * self.stocks - self.extraCosts * float(
-            self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0])
+        self.cash += float(self.dataScraper.getDateData(self.date, self.strategy.getType())) * self.stocks - self.extraCosts * float(self.dataScraper.getDateData(self.date, self.strategy.getType()))
         self.stocks = 0
 
     def update(self, date):
-        if(self.cash >= self.initialBuyAmount):
-            self.buyAmount = self.initialBuyAmount
-        while(self.cash < (self.buyAmount + self.buyAmount*self.extraCosts)):
-            self.buyAmount -= 1
+        self.buyAmount = .9*self.cash
         self.date = date
         self.strategy.setDate(date)
         self.buy()
@@ -64,14 +59,14 @@ class BackTesting:
         if not self.portfolio:
             pass
         else:
-            if (self.cash + self.stocks * float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0])) < ((1-self.drawDown)*(self.portfolio[-1])):
+            if (self.cash + self.stocks * float(self.dataScraper.getDateData(self.date, self.strategy.getType()))) < ((1-self.drawDown)*(self.portfolio[-1])):
                 print("                                    LOSS")
                 self.sellA()
-            elif (self.cash + self.stocks * float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0])) > ((1+self.drawUp)*(self.portfolio[-1])):
+            elif (self.cash + self.stocks * float(self.dataScraper.getDateData(self.date, self.strategy.getType()))) > ((1+self.drawUp)*(self.portfolio[-1])):
                 print("                                     PROFIT")
                 self.sellA()
 
-        self.portfolio.append(self.cash + self.stocks * float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0]))
+        self.portfolio.append(self.cash + self.stocks * float(self.dataScraper.getDateData(self.date, self.strategy.getType())))
         print(date)
         if(self.i == 1):
             self.listBuy.append("Buy")
@@ -80,7 +75,7 @@ class BackTesting:
         else:
             self.listBuy.append("Nothing")
         self.i = 0
-        self.closePrice.append(float(self.dataScraper.getDateData(self.date, self.strategy.getType()).iloc[0]))
+        self.closePrice.append(float(self.dataScraper.getDateData(self.date, self.strategy.getType())))
         self.numStocks.append(self.stocks)
         self.numCash.append(self.cash)
 

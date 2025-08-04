@@ -1,13 +1,12 @@
-import yfinance as yf
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 class DataScraping:
-    def __init__(self, ticker, startDate, endDate):
-        self.ticker = ticker
-        self.startDate = startDate
-        self.endDate = endDate
-        self.data = yf.download(tickers=ticker, start=startDate, end=endDate)
+    def __init__(self):
+        csv_path = input("Enter the path to your CSV file: ")
+        self.data = pd.read_csv(csv_path, parse_dates=["Date"])
+        self.data["Volume"] = self.data["Volume"].astype(str).str.replace(",", "").astype(float)
+        self.data.set_index("Date", inplace=True)
     def printData(self):
         print(self.data)
     def graphData(self, type):
